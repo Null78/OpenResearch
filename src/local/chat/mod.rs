@@ -1336,8 +1336,10 @@ fn with_selected_chat_context(text: String, annotations: &[TextAnnotation]) -> S
 /// Harness user messages never carry tool parts, so this alone marks one.
 const USER_SHELL_TOOL: &str = "bash";
 
-/// The synthetic tool part that marks a compaction in the transcript.
-const COMPACTED_TOOL: &str = "compacted";
+/// The synthetic tool part that marks a compaction in the transcript. `orx`
+/// keeps one definition so a harness replaying the transcript can find the
+/// marker instead of hard-coding its name.
+pub(crate) const COMPACTED_TOOL: &str = "compacted";
 
 /// A cancelled compaction's row would otherwise sit at `running` forever, where
 /// it reads as one that succeeded.

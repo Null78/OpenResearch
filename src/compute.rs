@@ -901,7 +901,15 @@ fn run_attribution(
         ),
         // The origin can arrive over HTTP: only the known marker labels reach telemetry.
         (None, None) => match agent_origin.filter(|origin| {
-            ["claude-code", "codex", "opencode", "cursor", "unknown"].contains(origin)
+            [
+                "claude-code",
+                "codex",
+                "opencode",
+                "cursor",
+                "alibaba-token-plan",
+                "unknown",
+            ]
+            .contains(origin)
         }) {
             Some(origin) => (
                 Some(origin.to_string()).filter(|origin| origin != "unknown"),

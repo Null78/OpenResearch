@@ -33,8 +33,15 @@ fn valid_model_label(label: &str) -> bool {
 
 impl InvocationIdentity {
     pub fn validate(&self) -> Result<()> {
-        if !["claude-code", "codex", "opencode", "cursor", "antigravity"]
-            .contains(&self.harness.as_str())
+        if ![
+            "claude-code",
+            "codex",
+            "opencode",
+            "cursor",
+            "antigravity",
+            "alibaba-token-plan",
+        ]
+        .contains(&self.harness.as_str())
         {
             return Err(anyhow!("Invalid invoking harness"));
         }

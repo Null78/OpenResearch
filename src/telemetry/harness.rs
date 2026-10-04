@@ -1,6 +1,13 @@
 use super::*;
 use serde_json::Value;
 
+/// The **CLI** harness roster: the entries whose install/auth state the boot
+/// snapshot reports, and the ids a detection probe may name. Every entry here
+/// carries install/login/update commands (`harness_setup`) — which is why a
+/// harness with no CLI child, like an API-direct one, is deliberately absent:
+/// it has no install state to report and no setup commands to offer. Its
+/// detection probes are dropped by `detect_payload` rather than asserted, so
+/// adding such a harness never takes the detection fill down.
 pub(crate) const IDS: [&str; 5] = ["claude-code", "codex", "opencode", "cursor", "antigravity"];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -172,8 +179,16 @@ fn detect_payload(
     let template = payload["events"][0].clone();
     if let Some(events) = payload["events"].as_array_mut() {
         // Ingestion caps a batch at 25 events; the pass row always survives.
-        for probe in probes.into_iter().take(24) {
-            debug_assert!(IDS.contains(&probe.harness), "{}", probe.harness);
+        // Only roster harnesses are reported, and a probe naming anything else
+        // is dropped here: the id space is a contract with ingestion, and a
+        // harness with no CLI child has no install state to send. Dropping
+        // rather than asserting is what keeps a newly added harness from taking
+        // the whole detection fill down on a debug build.
+        for probe in probes
+            .into_iter()
+            .filter(|probe| IDS.contains(&probe.harness))
+            .take(24)
+        {
             debug_assert!(probe.probe.len() <= 64, "{}", probe.probe);
             let mut event = template.clone();
             event["eventId"] = json!(uuid::Uuid::new_v4().to_string());
@@ -473,6 +488,45 @@ mod tests {
         );
         assert_eq!(payload["events"].as_array().unwrap().len(), 25);
     }
+    /// Only roster harnesses reach the detection payload. The probe for a harness
+    /// outside `IDS` — an API-direct one, which has no CLI install state to
+    /// report — is dropped, and crucially does **not** panic: the assert this
+    /// replaced would have taken the whole detection fill down on a debug build
+    /// the first time such a harness existed.
+    #[test]
+    fn detect_payload_skips_a_probe_for_a_harness_outside_the_roster() {
+        let payload = detect_payload(
+            "installation",
+            uuid::Uuid::new_v4(),
+            uuid::Uuid::new_v4(),
+            "full",
+            10,
+            Some(3),
+            1,
+            1,
+            vec![
+                crate::local::harness::ProbeTiming {
+                    harness: "alibaba-token-plan",
+                    probe: "total",
+                    ms: 12,
+                },
+                crate::local::harness::ProbeTiming {
+                    harness: "codex",
+                    probe: "total",
+                    ms: 5,
+                },
+            ],
+        );
+        let reported: Vec<&str> = payload["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|event| event["name"] == "cli_harness_detect_probe")
+            .map(|event| event["properties"]["harness"].as_str().unwrap())
+            .collect();
+        assert_eq!(reported, ["codex"]);
+    }
+
     #[test]
     fn snapshot_survives_restart_and_does_not_change() {
         let mut settings = Settings::default();

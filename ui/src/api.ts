@@ -1514,7 +1514,13 @@ export const reportLocale = (locale: string): void => {
   void post<{ locale: string }>("/api/telemetry/locale", { locale }).catch(() => {});
 };
 
-export type HarnessId = "claude-code" | "codex" | "opencode" | "cursor" | "antigravity";
+export type HarnessId =
+  | "claude-code"
+  | "codex"
+  | "opencode"
+  | "cursor"
+  | "antigravity"
+  | "alibaba-token-plan";
 
 export interface HarnessModel {
   id: string;

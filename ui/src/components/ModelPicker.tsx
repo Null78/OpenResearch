@@ -48,6 +48,7 @@ export const HARNESS_LABELS: Record<HarnessId, string> = {
   opencode: "OpenCode",
   cursor: "Cursor",
   antigravity: "Google Antigravity",
+  "alibaba-token-plan": "Alibaba Cloud",
 };
 
 /** First harness that can actually run — the fallback when nothing is picked.
